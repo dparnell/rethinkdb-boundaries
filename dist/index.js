@@ -2,6 +2,10 @@
 
 exports.__esModule = true;
 
+var _keys = require('babel-runtime/core-js/object/keys');
+
+var _keys2 = _interopRequireDefault(_keys);
+
 var _extends2 = require('babel-runtime/helpers/extends');
 
 var _extends3 = _interopRequireDefault(_extends2);
@@ -40,10 +44,6 @@ var _defaultConfig = require('./defaultConfig');
 
 var _defaultConfig2 = _interopRequireDefault(_defaultConfig);
 
-var _getFTP = require('./getFTP');
-
-var _getFTP2 = _interopRequireDefault(_getFTP);
-
 var _getRethink = require('./getRethink');
 
 var _getRethink2 = _interopRequireDefault(_getRethink);
@@ -54,14 +54,15 @@ var _saveBoundary2 = _interopRequireDefault(_saveBoundary);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-/*eslint no-console: 0 */
+var http = require('http'); /*eslint no-console: 0 */
+
+var url = require('url');
 
 exports.default = function (overrides, cb) {
   cb = (0, _once2.default)(cb);
   var options = (0, _lodash2.default)({}, overrides, _defaultConfig2.default);
 
   console.log(_chalk2.default.bold('Establishing connections:'));
-  console.log('  -- ' + _chalk2.default.cyan('US Census Bureau @ ' + options.ftp.host));
   console.log('  -- ' + _chalk2.default.cyan('RethinkDB @ ' + options.rethink.db));
 
   getConnections(options, function (err, conns) {
@@ -70,19 +71,20 @@ exports.default = function (overrides, cb) {
       options: options
     });
 
-    _async2.default.forEachSeries(options.objects, processObject.bind(null, context), cb);
+    _async2.default.forEachSeries((0, _keys2.default)(options.objects), processObject.bind(null, context), cb);
   });
 };
 
 function getConnections(options, cb) {
   cb = (0, _once2.default)(cb);
   _async2.default.parallel({
-    ftp: _getFTP2.default.bind(null, options.ftp),
     rethink: _getRethink2.default.bind(null, options.rethink)
   }, cb);
 }
 
 function processObject(context, object, cb) {
+  console.log('  -- processing ' + _chalk2.default.cyan(object));
+
   cb = (0, _once2.default)(cb);
   fetchObjectFiles(context, object, function (err, filePaths) {
     if (err) return cb(err);
@@ -93,12 +95,11 @@ function processObject(context, object, cb) {
 
 function processFilePath(context, file, cb) {
   cb = (0, _once2.default)(cb);
-  var ftp = context.ftp;
 
-  ftp.get(file.path, function (err, stream) {
-    if (err) return cb(err);
+  console.log('  -- downloading ' + _chalk2.default.cyan(file));
 
-    var srcStream = (0, _shp2json2.default)(stream);
+  http.get(url.parse(file), function (response) {
+    var srcStream = (0, _shp2json2.default)(response);
     var chunks = [];
 
     srcStream.on('data', function (data) {
@@ -113,28 +114,12 @@ function processFilePath(context, file, cb) {
       console.log('  -- ' + _chalk2.default.cyan('Parsed ' + file.path + ', inserting ' + docs.length + ' boundaries now...'));
       _async2.default.forEachSeries(docs, _saveBoundary2.default.bind(null, context), cb);
     });
-
-    stream.resume();
   });
 }
 
-function fetchObjectFiles(_ref, object, cb) {
-  var ftp = _ref.ftp;
-  var options = _ref.options;
-
+function fetchObjectFiles(context, object, cb) {
   cb = (0, _once2.default)(cb);
-  var folderName = _path2.default.join(options.base, object);
-  ftp.list(folderName, function (err, list) {
-    if (err) return cb(err);
-    var newList = list.filter(function (i) {
-      return i.type === '-';
-    }).map(function (i) {
-      return {
-        type: object,
-        path: _path2.default.join(folderName, i.name)
-      };
-    });
-    cb(null, newList);
-  });
+  var newList = context.options.objects[object];
+  cb(null, newList);
 }
 module.exports = exports['default'];

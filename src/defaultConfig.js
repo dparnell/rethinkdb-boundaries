@@ -7,6 +7,7 @@ export default {
         table: 'Boundary'
     },
     objects: {
+        'STATE': ["http://www2.census.gov/geo/tiger/TIGER2015/STATE/tl_2015_us_state.zip"],
         'PLACE': [
             "http://www2.census.gov/geo/tiger/TIGER2015/PLACE/tl_2015_01_place.zip",
             "http://www2.census.gov/geo/tiger/TIGER2015/PLACE/tl_2015_02_place.zip",
@@ -65,7 +66,6 @@ export default {
             "http://www2.census.gov/geo/tiger/TIGER2015/PLACE/tl_2015_72_place.zip",
             "http://www2.census.gov/geo/tiger/TIGER2015/PLACE/tl_2015_78_place.zip"
         ],
-
-        'STATE': ["http://www2.census.gov/geo/tiger/TIGER2015/ZCTA5/tl_2015_us_zcta510.zip"]
+        'ZIP': ["http://www2.census.gov/geo/tiger/TIGER2015/ZCTA5/tl_2015_us_zcta510.zip"]
     }
 }
